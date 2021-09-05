@@ -10,7 +10,7 @@
     "url": "https://github.com/muhammad-usman-anwar"
   },
   "scripts": {
-    "electron": "electron ./dist/electron/app.js",
+    "electron": "electron ./dist/electron/electron/app.js",
     "electron:build": "tsc -p electron/tsconfig.json",
     "electron:start": "yarn electron:build && yarn electron",
     "electron:dev": "nodemon --watch electron -e ts,json --exec \"yarn electron:start -- -- --single\"",

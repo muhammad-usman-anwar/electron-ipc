@@ -3,6 +3,7 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow } from 'electron'
 import { join as joinPath } from 'path'
+import { ElectronIPC } from "../src/ELectronIPC";
 
 function createWindow() {
     // Create the browser window.
@@ -15,10 +16,19 @@ function createWindow() {
     })
 
     // and load the index.html of the app.
-    mainWindow.loadFile('../../electron/index.html')
+    mainWindow.loadFile('../../../electron/index.html')
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools()
+    const ipc = ElectronIPC.initialize(mainWindow);
+    ipc.addChanel('testing', { message: 'done' });
+    mainWindow.webContents.on('did-finish-load', () => {
+        setTimeout(() => {
+            ipc.get<string>('testing')?.subscribe(val => {
+                console.log(val);
+            })
+        }, 5000)
+    })
 }
 
 // This method will be called when Electron has finished

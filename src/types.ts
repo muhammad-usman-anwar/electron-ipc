@@ -1,3 +1,5 @@
+import { BehaviorSubject } from "rxjs";
+
 export enum SubjectTypes {
     SUBJECT,
     BEHAVIOR_SUBJECT,
@@ -6,10 +8,25 @@ export enum SubjectTypes {
 }
 
 export enum ControlFlags {
-    INIT,
-    CLOSE,
-    CREATE,
-    FAIL
+    INIT = 'init',
+    QUIT = 'quit',
+    CLOSE = 'close',
+    CREATE = 'create',
+    FAIL = 'fail',
+    DATA = 'data',
 }
 
-export interface Data { }
+export enum ELectronProcessTypes {
+    BROWSER = 'browser',
+    RENDERER = 'renderer',
+}
+
+export interface SignalData<T> {
+    channel: string;
+    data?: T;
+}
+
+export interface Channel {
+    incoming: { [index: string]: BehaviorSubject<unknown> },
+    outgoing: { [index: string]: BehaviorSubject<unknown> },
+}
