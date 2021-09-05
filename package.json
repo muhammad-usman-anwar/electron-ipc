@@ -2,20 +2,31 @@
   "name": "electron-ipc",
   "version": "1.0.0",
   "description": "rxjs based electron IPC channel wrapper",
-  "main": "./dist/electron/app.js",
+  "main": "lib/index.js",
+  "types": "lib",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muhammad-usman-anwar/electron-ipc"
+  },
   "author": {
     "name": "Muhammad Usman Anwar",
     "email": "usman17396@gmail.com",
     "url": "https://github.com/muhammad-usman-anwar"
   },
+  "keywords": [
+    "electron",
+    "ipc",
+    "electron-ipc",
+    "rxjs"
+  ],
   "scripts": {
     "electron": "electron ./dist/electron/electron/app.js",
     "electron:build": "tsc -p electron/tsconfig.json",
     "electron:start": "yarn electron:build && yarn electron",
     "electron:dev": "nodemon --watch electron -e ts,json --exec \"yarn electron:start -- -- --single\"",
     "start": "",
-    "ipc:build": "tsc -p tsconfig.app.json"
+    "build": "tsc -p tsconfig.app.json"
   },
   "devDependencies": {
     "@types/node": "^16.7.6",

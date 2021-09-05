@@ -4,10 +4,16 @@
   "compilerOptions": {
     "target": "ES5",
     "module": "CommonJS",
-    "outDir": "./dist/electron-ipc",
-    "types": []
+    "declaration": true,
+    "declarationMap": true,
+    "strict": true,
+    "outDir": "./lib",
   },
   "include": [
     "src/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__/*"
   ]
 }

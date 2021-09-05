@@ -3,7 +3,7 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow } from 'electron'
 import { join as joinPath } from 'path'
-import { ElectronIPC } from "../src/ELectronIPC";
+import { ElectronIPC } from "../src";
 
 function createWindow() {
     // Create the browser window.

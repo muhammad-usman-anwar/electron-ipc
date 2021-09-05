@@ -1,5 +1,5 @@
 import { BehaviorSubject } from "rxjs";
-import { ElectronIPC } from "../src/ELectronIPC";
+import { ElectronIPC } from "../src";
 
 console.log('hello')
 const ipc = ElectronIPC.initialize();

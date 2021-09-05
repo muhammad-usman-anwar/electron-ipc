@@ -7,18 +7,17 @@ export class ElectronIPC {
     private static _instance: ElectronIPC;
     private que: string[];
     private win: BrowserWindow;
-    private isInitialized: boolean;
+    private isInitialized: boolean = false;
     readonly channels: Channel;
     private constructor(win?: BrowserWindow) {
+        if (!win) throw new Error('Browser window is missing');
+        this.win = win;
         this.que = [];
         this.channels = {
             incoming: {},
             outgoing: {},
         };
-        if (this.isMain) {
-            if (!win) throw new Error('Browser window is missing');
-            this.initMain(win);
-        }
+        if (this.isMain) this.initMain();
         else this.initRenderer();
     }
 
@@ -100,16 +99,15 @@ export class ElectronIPC {
         else subject.next(sd.data)
     }
 
-    private initMain(win: BrowserWindow) {
+    private initMain() {
         //console.log('init main');
-        this.win = win;
         ipcMain.once(ControlFlags.INIT, (event) => {
             //console.log('init renderer')
             this.resetSubjects('INCOMING');
             this.isInitialized = true;
-            win.webContents.send(ControlFlags.INIT);
+            this.win.webContents.send(ControlFlags.INIT);
             this.que?.forEach(subjectName => {
-                win.webContents.send(ControlFlags.CREATE,
+                this.win.webContents.send(ControlFlags.CREATE,
                     {
                         channel: subjectName,
                         data: this.channels?.outgoing[subjectName]?.value
