@@ -1,6 +1,6 @@
 # Electron IPC Wrapper V2
 
-It is a rxjs based electron ipc wrapper __V2__
+It is a rxjs based electron ipc wrapper __V2__, check out [Quick Start](#quick-start)
 
 ## Notes
 
@@ -74,6 +74,41 @@ It is for `v2`
 - Following methods are available to send and recieve data,
     - `send(data:any)`
     - `listen`, observable for incoming data
+
+### class: `ElectronIPC`
+
+#### static method: `initialize(win?: BrowserWindow)`
+Initializes/provides with instance of the class, `win` param is required for __main__ process.
+
+#### static member: `initialize`
+Refers to the instance of the class.
+
+#### method: `addChanel<T>(name: string, data: T)`
+Adds a full duplex chanel for communication
+
+#### method: `get<T>(channelName: string)`
+gets an available chanel by its name/title, null if not present.
+
+#### member: `channels`
+Object contatining all the available channels
+```ts
+{
+  [index:string]:DuplexChannel;
+}
+```
+Above __index__ is the `chanelName`
+
+### class: `DuplexChannel<U>`
+__U__ is the type of data for transmission
+
+#### member: `listen`
+Objservable, outputs incoming data on the channel.
+
+#### method: `send(data: U)`
+send data to other end of IPC channel
+
+#### method: `close()`
+closes the ipc channel observers
 
 ## Quick Start
 
