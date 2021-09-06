@@ -1,6 +1,6 @@
 {
   "name": "electron-reactive-ipc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "rxjs based electron IPC channel wrapper",
   "main": "lib/index.js",
   "types": "lib",
