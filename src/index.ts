@@ -11,7 +11,8 @@ export class ElectronIPC {
     readonly channels: Channel;
     private constructor(win?: BrowserWindow) {
         if (this.isMain && !win) throw new Error('Browser window is missing');
-        this.win = win;
+        if (win)
+            this.win = win;
         this.que = [];
         this.channels = {
             incoming: {},
