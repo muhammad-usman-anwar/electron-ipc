@@ -9,8 +9,10 @@ export class ElectronIPC {
     private win: BrowserWindow;
     private isInitialized: boolean = false;
     readonly channels: Channel;
+    private _stateSubject: BehaviorSubject<boolean>;
     private constructor(win?: BrowserWindow) {
         if (this.isMain && !win) throw new Error('Browser window is missing');
+        this._stateSubject = new BehaviorSubject(false);
         if (win)
             this.win = win;
         this.que = [];
@@ -25,6 +27,10 @@ export class ElectronIPC {
     public static initialize(win?: BrowserWindow): ElectronIPC {
         if (!this._instance) this._instance = new ElectronIPC(win)
         return this._instance
+    }
+
+    public get initState() {
+        return this._stateSubject.asObservable();
     }
 
     public static get instance() {
@@ -115,6 +121,7 @@ export class ElectronIPC {
                     } as SignalData<unknown>);
             });
             this.que = [];
+            this._stateSubject.next(this.isInitialized);
         });
 
         ipcMain.on(ControlFlags.CREATE, (event, data: SignalData<unknown>) => {
@@ -135,6 +142,7 @@ export class ElectronIPC {
         ipcMain.once(ControlFlags.QUIT, (event) => {
             this.resetSubjects('INCOMING');
             this.isInitialized = false;
+            this._stateSubject.next(this.isInitialized);
             this.loadQue();
         });
 
@@ -157,6 +165,7 @@ export class ElectronIPC {
                     } as SignalData<unknown>);
             });
             this.que = [];
+            this._stateSubject.next(this.isInitialized);
         })
 
         ipcRenderer.on(ControlFlags.CREATE, (event, data: SignalData<unknown>) => {
@@ -177,6 +186,7 @@ export class ElectronIPC {
         ipcRenderer.once(ControlFlags.QUIT, (event) => {
             this.resetSubjects('INCOMING');
             this.isInitialized = false;
+            this._stateSubject.next(this.isInitialized);
             this.loadQue();
         });
 
