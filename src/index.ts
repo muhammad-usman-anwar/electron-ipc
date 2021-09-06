@@ -43,7 +43,9 @@ export class ElectronIPC {
         const channel = this.setDataOutgoing({ channel: name, data });
         if (!this.isInitialized) this.que.push(name);
         if (channel) {
+            Object.assign(this._channels, { [name]: channel });
             channel.listenLocal.subscribe(val => {
+                console.log('asasasa');
                 (this.isMain ? this.win?.webContents : ipcRenderer).send(ControlFlags.DATA,
                     {
                         channel: name,
@@ -60,11 +62,13 @@ export class ElectronIPC {
 
     private resetChannels() {
         Object.entries(this._channels).forEach(([key, val]) => {
-            try {
-                val.close();
-                delete this._channels[key];
-            } catch (error) {
-                console.log(error)
+            if (!this.que.includes(key)) {
+                try {
+                    val.close();
+                    delete this._channels[key];
+                } catch (error) {
+                    console.log(error)
+                }
             }
         });
     }
@@ -74,6 +78,14 @@ export class ElectronIPC {
         const channel = this._channels[sd.channel];
         if (!channel) {
             this._channels[sd.channel] = new IPCChannel(sd.data, ChannelState.INCOMING);
+            console.log('xxxxxxxxxxxxx')
+            this._channels[sd.channel].listenLocal.subscribe(val => {
+                (this.isMain ? this.win?.webContents : ipcRenderer).send(ControlFlags.DATA,
+                    {
+                        channel: sd.channel,
+                        data: val,
+                    } as SignalData<unknown>);
+            });
             return this._channels[sd.channel];
         }
         else channel.recieve(sd.data);
@@ -83,16 +95,16 @@ export class ElectronIPC {
         if (!sd) return;
         const channel = this._channels[sd.channel];
         if (!channel) {
-            this._channels[sd.channel] = new IPCChannel(sd.data, ChannelState.OUTGOING);
-            return this._channels[sd.channel];
+            const channel = new IPCChannel(sd.data, ChannelState.OUTGOING);
+            return channel;
         }
         else channel.send(sd.data);
     }
 
     private initMain() {
-        //console.log('init main');
+        console.log('init main');
         ipcMain.once(ControlFlags.INIT, (event) => {
-            //console.log('init renderer')
+            console.log('init renderer')
             this.resetChannels();
             this.isInitialized = true;
             this.win.webContents.send(ControlFlags.INIT);
@@ -128,12 +140,12 @@ export class ElectronIPC {
     }
 
     private loadQue() {
-        Object.keys(this.channels?.outgoing)?.forEach(val => { this.que.push(val) });
+        Object.keys(this.channels)?.forEach(val => { this.que.push(val) });
     }
     private initRenderer() {
-        //console.log('init renderer')
+        console.log('init renderer')
         ipcRenderer.once(ControlFlags.INIT, (event) => {
-            //console.log('init main')
+            console.log('init main')
             this.resetChannels();
             this.isInitialized = true;
             this.que?.forEach(subjectName => {

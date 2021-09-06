@@ -25,6 +25,9 @@ function createWindow() {
     channel.listen?.subscribe(val => {
         console.log(val);
     });
+    setTimeout(() => {
+        channel.send({ message: 'exit please' })
+    }, 10000)
 }
 
 // This method will be called when Electron has finished

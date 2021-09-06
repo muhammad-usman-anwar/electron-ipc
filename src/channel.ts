@@ -7,8 +7,8 @@ export class DuplexChannel<U>{
 
     constructor(data: U, state = ChannelState.OUTGOING) {
         if (state !== ChannelState.OUTGOING) {
-            this.outgoing = new BehaviorSubject(data);
-            this.incoming = new BehaviorSubject(null);
+            this.incoming = new BehaviorSubject(data);
+            this.outgoing = new BehaviorSubject(null);
         }
         else {
             this.outgoing = new BehaviorSubject(data);
