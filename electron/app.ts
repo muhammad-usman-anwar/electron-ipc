@@ -21,14 +21,10 @@ function createWindow() {
     // Open the DevTools.
     mainWindow.webContents.openDevTools()
     const ipc = ElectronIPC.initialize(mainWindow);
-    ipc.addChanel('testing', { message: 'done' });
-    mainWindow.webContents.on('did-finish-load', () => {
-        setTimeout(() => {
-            ipc.get<string>('testing')?.subscribe(val => {
-                console.log(val);
-            })
-        }, 5000)
-    })
+    const channel = ipc.addChanel('testing', { message: 'done' });
+    channel.listen?.subscribe(val => {
+        console.log(val);
+    });
 }
 
 // This method will be called when Electron has finished

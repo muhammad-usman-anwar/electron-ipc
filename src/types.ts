@@ -26,7 +26,7 @@ export interface SignalData<T> {
     data?: T;
 }
 
-export interface Channel {
-    incoming: { [index: string]: BehaviorSubject<unknown> },
-    outgoing: { [index: string]: BehaviorSubject<unknown> },
+export enum ChannelState {
+    INCOMING,
+    OUTGOING
 }

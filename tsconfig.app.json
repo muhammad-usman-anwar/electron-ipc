@@ -6,7 +6,6 @@
     "module": "CommonJS",
     "declaration": true,
     "declarationMap": true,
-    "strict": true,
     "outDir": "./lib",
   },
   "include": [

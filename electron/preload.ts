@@ -1,18 +1,16 @@
-import { BehaviorSubject } from "rxjs";
 import { ElectronIPC } from "../src";
 
 console.log('hello')
 const ipc = ElectronIPC.initialize();
-const subject: BehaviorSubject<{ message?: string }> = ipc.addChanel('testing', { message: 'renderer' });
 setTimeout(() => {
-    ipc.get<string>('testing')?.subscribe(val => {
+    const channel = ipc.get<{ message: string }>('testing');
+    channel?.listen.subscribe(val => {
         console.log(val);
     });
-    const local = ipc.get
     let i = 1;
     setInterval(() => {
         console.log('sending data')
-        subject.next({ message: `HI${i}` });
+        channel.send({ message: `HI${i}` });
         i++;
     }, 1000)
 }, 5000);

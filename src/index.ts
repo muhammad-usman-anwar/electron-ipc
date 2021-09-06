@@ -1,24 +1,29 @@
 import { BrowserWindow, ipcMain, ipcRenderer } from "electron";
-import { BehaviorSubject } from "rxjs";
 import { filter } from "rxjs/operators";
-import { Channel, ControlFlags, ELectronProcessTypes, SignalData } from "./types"
+import { DuplexChannel } from "./channel";
+import { ChannelState, ControlFlags, ELectronProcessTypes, SignalData } from "./types"
+
+interface Channels<U> {
+    [index: string]: DuplexChannel<U>;
+}
 
 export class ElectronIPC {
     private static _instance: ElectronIPC;
     private que: string[];
     private win: BrowserWindow;
     private isInitialized: boolean = false;
-    readonly channels: Channel;
+    private _channels: { [index: string]: IPCChannel<unknown> };
     private constructor(win?: BrowserWindow) {
-        if (!win) throw new Error('Browser window is missing');
+        if (this.isMain && !win) throw new Error('Browser window is missing');
         this.win = win;
         this.que = [];
-        this.channels = {
-            incoming: {},
-            outgoing: {},
-        };
+        this._channels = {};
         if (this.isMain) this.initMain();
         else this.initRenderer();
+    }
+
+    public get channels(): Channels<unknown> {
+        return this._channels;
     }
 
     public static initialize(win?: BrowserWindow): ElectronIPC {
@@ -30,26 +35,15 @@ export class ElectronIPC {
         return this._instance
     }
 
-    public getLocal<T>(subjectName: string) {
-        return <BehaviorSubject<T>>this.channels?.outgoing[subjectName];
+    public get<T>(channelName: string) {
+        return <DuplexChannel<T>>this._channels?.[channelName];
     }
 
-    public get<T>(subjectName: string) {
-        return <BehaviorSubject<T>>this.channels?.incoming[subjectName];
-    }
-
-    public getObservable<T>(subjectName: string) {
-        return (<BehaviorSubject<T>>this.channels?.incoming[subjectName])?.pipe(filter(val => val ? true : false));
-    }
-
-    public getLocalObservable<T>(subjectName: string) {
-        return (<BehaviorSubject<T>>this.channels?.outgoing[subjectName])?.pipe(filter(val => val ? true : false));
-    }
-
-    public addChanel<T>(name: string, data: T) {
-        const subject = this.setDataLocal({ channel: name, data });
-        if (subject) {
-            subject.subscribe(val => {
+    public addChanel<T>(name: string, data: T): DuplexChannel<unknown> {
+        const channel = this.setDataOutgoing({ channel: name, data });
+        if (!this.isInitialized) this.que.push(name);
+        if (channel) {
+            channel.listenLocal.subscribe(val => {
                 (this.isMain ? this.win?.webContents : ipcRenderer).send(ControlFlags.DATA,
                     {
                         channel: name,
@@ -57,82 +51,76 @@ export class ElectronIPC {
                     } as SignalData<unknown>);
             });
         }
-        return subject;
+        return channel;
     }
 
     private get isMain(): boolean {
         return process?.type === ELectronProcessTypes.BROWSER;
     }
 
-    private resetSubjects(type: 'INCOMING' | 'OUTGOING') {
-        const subjects = type === 'INCOMING' ? this.channels?.incoming : this.channels?.outgoing;
-        Object.entries(subjects).forEach(([key, val]) => {
+    private resetChannels() {
+        Object.entries(this._channels).forEach(([key, val]) => {
             try {
-                val.unsubscribe();
-                delete subjects[key];
+                val.close();
+                delete this._channels[key];
             } catch (error) {
                 console.log(error)
             }
         });
     }
 
-    private setData(sd: SignalData<unknown>) {
+    private setDataIncoming(sd: SignalData<unknown>) {
         if (!sd) return;
-        const subjects = this.channels.incoming;
-        const subject = subjects[sd.channel];
-        if (!subject) {
-            subjects[sd.channel] = new BehaviorSubject(sd.data);
-            return subjects[sd.channel];
+        const channel = this._channels[sd.channel];
+        if (!channel) {
+            this._channels[sd.channel] = new IPCChannel(sd.data, ChannelState.INCOMING);
+            return this._channels[sd.channel];
         }
-        else subject.next(sd.data)
+        else channel.recieve(sd.data);
     }
 
-    private setDataLocal(sd: SignalData<unknown>) {
+    private setDataOutgoing(sd: SignalData<unknown>) {
         if (!sd) return;
-        const subjects = this.channels.outgoing;
-        const subject = subjects[sd.channel];
-        if (!subject) {
-            if (!this.isInitialized) this.que.push(sd.channel);
-            subjects[sd.channel] = new BehaviorSubject(sd.data);
-            return subjects[sd.channel];
+        const channel = this._channels[sd.channel];
+        if (!channel) {
+            this._channels[sd.channel] = new IPCChannel(sd.data, ChannelState.OUTGOING);
+            return this._channels[sd.channel];
         }
-        else subject.next(sd.data)
+        else channel.send(sd.data);
     }
 
     private initMain() {
         //console.log('init main');
         ipcMain.once(ControlFlags.INIT, (event) => {
             //console.log('init renderer')
-            this.resetSubjects('INCOMING');
+            this.resetChannels();
             this.isInitialized = true;
             this.win.webContents.send(ControlFlags.INIT);
-            this.que?.forEach(subjectName => {
+            this.que?.forEach(channelName => {
                 this.win.webContents.send(ControlFlags.CREATE,
                     {
-                        channel: subjectName,
-                        data: this.channels?.outgoing[subjectName]?.value
+                        channel: channelName,
+                        data: this._channels[channelName]?.localValue,
                     } as SignalData<unknown>);
             });
             this.que = [];
         });
 
         ipcMain.on(ControlFlags.CREATE, (event, data: SignalData<unknown>) => {
-            this.setData(data);
+            this.setDataIncoming(data);
         });
         ipcMain.on(ControlFlags.CLOSE, (event, data: SignalData<unknown>) => {
-            const subjects = this.channels?.incoming;
-            if (subjects[data.channel]) {
-                subjects[data.channel].unsubscribe();
-                setTimeout(() => {
-                    delete subjects[data.channel];
-                });
+            const channel = this._channels[data.channel];
+            if (channel) {
+                channel.close();
+                delete this._channels[data.channel];
             }
         });
         ipcMain.on(ControlFlags.DATA, (event, data: SignalData<unknown>) => {
-            this.setData(data);
+            this.setDataIncoming(data);
         });
         ipcMain.once(ControlFlags.QUIT, (event) => {
-            this.resetSubjects('INCOMING');
+            this.resetChannels();
             this.isInitialized = false;
             this.loadQue();
         });
@@ -146,39 +134,56 @@ export class ElectronIPC {
         //console.log('init renderer')
         ipcRenderer.once(ControlFlags.INIT, (event) => {
             //console.log('init main')
-            this.resetSubjects('INCOMING');
+            this.resetChannels();
             this.isInitialized = true;
             this.que?.forEach(subjectName => {
                 ipcRenderer.send(ControlFlags.CREATE,
                     {
                         channel: subjectName,
-                        data: this.channels?.outgoing[subjectName]?.value
+                        data: this._channels[subjectName]?.localValue,
                     } as SignalData<unknown>);
             });
             this.que = [];
         })
 
         ipcRenderer.on(ControlFlags.CREATE, (event, data: SignalData<unknown>) => {
-            this.setData(data);
+            this.setDataIncoming(data);
         });
         ipcRenderer.on(ControlFlags.CLOSE, (event, data: SignalData<unknown>) => {
-            const subjects = this.channels?.incoming;
-            if (subjects[data.channel]) {
-                subjects[data.channel].unsubscribe();
-                setTimeout(() => {
-                    delete subjects[data.channel];
-                });
+            const channel = this._channels[data.channel];
+            if (channel) {
+                channel.close();
+                delete this._channels[data.channel];
             }
         });
         ipcRenderer.on(ControlFlags.DATA, (event, data: SignalData<unknown>) => {
-            this.setData(data);
+            this.setDataIncoming(data);
         });
         ipcRenderer.once(ControlFlags.QUIT, (event) => {
-            this.resetSubjects('INCOMING');
+            this.resetChannels;
             this.isInitialized = false;
             this.loadQue();
         });
 
         ipcRenderer.send(ControlFlags.INIT);
+    }
+}
+
+
+class IPCChannel<U> extends DuplexChannel<U>{
+    constructor(data: U, state = ChannelState.OUTGOING) {
+        super(data, state);
+    }
+
+    recieve(data: U) {
+        this.incoming.next(data);
+    }
+
+    get listenLocal() {
+        return this.outgoing.pipe(filter(val => val ? true : false));
+    }
+
+    get localValue() {
+        return this.outgoing?.value;
     }
 }
