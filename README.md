@@ -5,8 +5,8 @@ It is a rxjs based electron ipc wrapper
 ## Installation
 
 ```bash
-npm i electron-ipc #for npm
-yarn add electron-ipc #for yarn
+npm i electron-reactive-ipc #for npm
+yarn add electron-reactive-ipc #for yarn
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ It has to be initialized in both processes(`main` and `renderer`),
 #### main
 The window object is required for it to initialize
 ```ts
-import { ElectronIPC } from 'electron-ipc'
+import { ElectronIPC } from 'electron-reactive-ipc'
 
 /*
   rest of the code
@@ -41,7 +41,7 @@ function createWindow () {
 ### renderer
 this has to be called from __preload__ script(unless node integration is enabled).
 ```ts
-import { ElectronIPC } from 'electron-ipc'
+import { ElectronIPC } from 'electron-reactive-ipc'
 
 /*
   rest of the code
