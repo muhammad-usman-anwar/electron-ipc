@@ -45,7 +45,6 @@ export class ElectronIPC {
         if (channel) {
             Object.assign(this._channels, { [name]: channel });
             channel.listenLocal.subscribe(val => {
-                console.log('asasasa');
                 (this.isMain ? this.win?.webContents : ipcRenderer).send(ControlFlags.DATA,
                     {
                         channel: name,
@@ -78,7 +77,6 @@ export class ElectronIPC {
         const channel = this._channels[sd.channel];
         if (!channel) {
             this._channels[sd.channel] = new IPCChannel(sd.data, ChannelState.INCOMING);
-            console.log('xxxxxxxxxxxxx')
             this._channels[sd.channel].listenLocal.subscribe(val => {
                 (this.isMain ? this.win?.webContents : ipcRenderer).send(ControlFlags.DATA,
                     {
@@ -177,7 +175,27 @@ export class ElectronIPC {
             this.loadQue();
         });
 
+        this.pingMain();
+    }
+
+    private pingMain() {
         ipcRenderer.send(ControlFlags.INIT);
+        let i = 0;
+        let timer: NodeJS.Timer;
+        timer = setInterval(() => {
+            if (this.isInitialized) {
+                clearInterval(timer);
+                return;
+            }
+            if (i > 3) {
+                clearInterval(timer);
+                throw new Error('IPC Handshake Failed');
+            }
+
+            console.log(`No response from main, reconnecting. Attermpt: ${i + 2}`)
+            ipcRenderer.send(ControlFlags.INIT);
+            i++;
+        }, 3000)
     }
 }
 
