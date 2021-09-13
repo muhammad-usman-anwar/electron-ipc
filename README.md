@@ -4,8 +4,7 @@ It is a rxjs based electron ipc wrapper __V2__, check out [Quick Start](#quick-s
 
 ## Notes
 
-- Previously had bad documentation, sorry.
-- it is in very early stages.
+- it is in very early stages(Please do suggest improvements over github).
 - I am going to maintain it in two branches(`v1` and `v2`), with different design approaches.
 - I have added a quick start guid at the end basing on electron one.
 
@@ -62,6 +61,7 @@ Its part of the main repository, check out `https://github.com/muhammad-usman-an
 
 ## Documentation
 It is for `v2`
+**Added multi window support, uses `webContents.id` to reference/index channels**
 
 - __BehaviorSubject__ are used to wrap araound the electron's ipc events.
 - Each instance mantain a list of both incoming and outgoing data subjects.
@@ -78,19 +78,25 @@ It is for `v2`
 ### class: `ElectronIPC`
 
 #### static method: `initialize(win?: BrowserWindow)`
-Initializes/provides with instance of the class, `win` param is required for __main__ process.
+Initializes/provides with instance of the class, `win` param is required for __main__ process. If instance already exists, it will set the `win` as the default window.
 
 #### static member: `initialize`
 Refers to the instance of the class.
 
-#### method: `addChanel<T>(name: string, data: T)`
-Adds a full duplex chanel for communication
+#### method: `addChanel<T>(name: string, data: T, win?: BrowserWindow)`
+Adds a full duplex chanel for communication, `win` param is only valid for __main__ process. It used to associate the channel with the given window(if omitted, will use the default window)
 
-#### method: `get<T>(channelName: string)`
-gets an available chanel by its name/title, null if not present.
+#### method: `getChannelsForWindow(id?: number)`
+Gets all the available channels for the provided `WebContents.id`
+
+#### method: `get<T>(channelName: string, id?:number)`
+gets an available chanel by its name/title, null if not present. `id` param is only valid for __main__ process. It refers to `BrowserWindow.webContents.id`, to fetch the respective window's channel(if omitted then default `win`'s id is used)
+
+#### member: `deaultWindow` `//setter only`
+used to set default browserWIndow later on.
 
 #### member: `channels`
-Object contatining all the available channels
+Object contatining all the available channels (for __main__, returns default `win`'s channels)
 ```ts
 {
   [index:string]:DuplexChannel;
