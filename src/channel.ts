@@ -14,7 +14,7 @@ export class DuplexChannel<U>{
             this.outgoing = new BehaviorSubject(data);
             this.incoming = new BehaviorSubject(null);
         }
-        this.init();
+        //this.init();
     }
 
     public get listen() {
@@ -24,13 +24,13 @@ export class DuplexChannel<U>{
     public send(data: U) {
         this.outgoing.next(data);
     }
-
-    private init() {
-        this.outgoing.subscribe(val => {
-            if (val) { }
-        });
-    }
-
+    /*
+        private init() {
+            this.outgoing.subscribe(val => {
+                if (val) { }
+            });
+        }
+    */
     public close() {
         if (!this.incoming.closed) this.incoming.unsubscribe();
         if (!this.outgoing.closed) this.outgoing.unsubscribe();

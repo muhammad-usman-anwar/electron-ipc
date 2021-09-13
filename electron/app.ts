@@ -23,11 +23,34 @@ function createWindow() {
     const ipc = ElectronIPC.initialize(mainWindow);
     const channel = ipc.addChanel('testing', { message: 'done' });
     channel.listen?.subscribe(val => {
-        console.log(val);
+        console.log(val, 'jj');
     });
     setTimeout(() => {
         channel.send({ message: 'exit please' })
     }, 10000)
+    /* 
+    **
+    For Second window test
+    **
+    
+    const sWindow = new BrowserWindow({
+            width: 1000,
+            height: 600,
+            webPreferences: {
+                preload: joinPath(__dirname, 'preload.js')
+            }
+        })
+        // and load the index.html of the app.
+        sWindow.loadFile('../../../electron/index.html')
+        sWindow.webContents.openDevTools()
+        const sChannel = ipc.addChanel('testing', { message: 'done' }, sWindow);
+        sChannel.listen?.subscribe(val => {
+            console.log(val, '22');
+        })
+        setTimeout(() => {
+            sChannel.send({ message: 'exit' })
+        }, 8000)
+        */
 }
 
 // This method will be called when Electron has finished
