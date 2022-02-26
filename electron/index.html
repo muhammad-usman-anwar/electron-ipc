@@ -10,6 +10,13 @@
 
 <body>
     <h1>Testing</h1>
+    <button id="relload-button">reload</button>
+    <script>
+        const button = document.getElementById('relload-button');
+        button.addEventListener('click', () => {
+            window.location.reload();
+        });
+    </script>
 </body>
 
 </html>

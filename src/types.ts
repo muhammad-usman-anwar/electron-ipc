@@ -14,6 +14,7 @@ export enum ControlFlags {
     CREATE = 'create',
     FAIL = 'fail',
     DATA = 'data',
+    RELOAD = 'reload',
 }
 
 export enum ELectronProcessTypes {

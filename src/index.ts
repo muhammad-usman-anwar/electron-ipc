@@ -46,16 +46,6 @@ export class ElectronIPC {
 
     public set deaultWindow(win: BrowserWindow) {
         this.win = win;
-        this.win.on('ready-to-show', () => {
-            Object.keys(this._channels[this.win?.webContents.id ?? 0] || {}).forEach(channelName => {
-                const id = this.win?.webContents.id ?? 0
-                this.win.webContents.send(ControlFlags.CREATE,
-                    {
-                        channel: channelName,
-                        data: this._channels[id][channelName]?.localValue,
-                    } as SignalData<unknown>);
-            })
-        })
     }
 
     public addChanel<T>(name: string, data: T, win?: BrowserWindow): DuplexChannel<unknown> {
@@ -177,13 +167,18 @@ export class ElectronIPC {
             this.loadQue(event.sender.id);
         });
 
+        ipcMain.on(ControlFlags.RELOAD, (event) => {
+            this.loadQue(event?.sender.id);
+        });
+
     }
 
     private loadQue(id = 0) {
-        Object.keys(this.channels)?.forEach(val => {
+        Object.keys(this._channels[id])?.forEach(val => {
             if (this.que[id]) this.que[id].push(val)
             else this.que[id] = [];
         });
+        //console.log(this.que);
     }
     private initRenderer() {
         console.log('init renderer')
@@ -221,6 +216,11 @@ export class ElectronIPC {
         });
 
         this.pingMain();
+
+        window.onbeforeunload = () => {
+            console.log('reloading')
+            ipcRenderer.send(ControlFlags.RELOAD);
+        }
     }
 
     private pingMain() {

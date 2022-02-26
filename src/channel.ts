@@ -22,7 +22,7 @@ export class DuplexChannel<U>{
     }
 
     public send(data: U) {
-        this.outgoing.next(data);
+        this.outgoing?.next(data);
     }
     /*
         private init() {

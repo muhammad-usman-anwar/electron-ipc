@@ -12,7 +12,7 @@ setTimeout(() => {
 
     setInterval(() => {
         console.log('sending data')
-        channel.send({ message: `HI${i}` });
+        channel?.send({ message: `HI${i}` });
         i++;
     }, 1000)
 

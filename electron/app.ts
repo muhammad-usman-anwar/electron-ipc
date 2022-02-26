@@ -26,7 +26,7 @@ function createWindow() {
         console.log(val, 'jj');
     });
     setTimeout(() => {
-        channel.send({ message: 'exit please' })
+        channel?.send({ message: 'exit please' })
     }, 10000)
     /* 
     **
