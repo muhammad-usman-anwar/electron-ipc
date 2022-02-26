@@ -46,6 +46,16 @@ export class ElectronIPC {
 
     public set deaultWindow(win: BrowserWindow) {
         this.win = win;
+        this.win.on('ready-to-show', () => {
+            Object.keys(this._channels[this.win?.webContents.id ?? 0] || {}).forEach(channelName => {
+                const id = this.win?.webContents.id ?? 0
+                this.win.webContents.send(ControlFlags.CREATE,
+                    {
+                        channel: channelName,
+                        data: this._channels[id][channelName]?.localValue,
+                    } as SignalData<unknown>);
+            })
+        })
     }
 
     public addChanel<T>(name: string, data: T, win?: BrowserWindow): DuplexChannel<unknown> {
