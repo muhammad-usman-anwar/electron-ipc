@@ -37,11 +37,11 @@
   "devDependencies": {
     "@types/node": "^16.7.6",
     "chalk": "^4.1.2",
-    "electron": "^14.0.0",
-    "nodemon": "^2.0.12",
-    "typescript": "^4.4.2"
+    "electron": "^17.1.0",
+    "nodemon": "^2.0.15",
+    "typescript": "^4.5.5"
   },
   "dependencies": {
-    "rxjs": "^7.3.0"
+    "rxjs": "^7.5.4"
   }
 }
