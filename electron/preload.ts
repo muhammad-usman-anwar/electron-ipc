@@ -1,3 +1,4 @@
+import { contextBridge } from "electron/renderer";
 import { ElectronIPC } from "../src";
 
 console.log('hello')
@@ -17,4 +18,9 @@ setTimeout(() => {
     }, 1000)
 
 }, 5000);
-(window as any).ipc = ipc
+
+// For ELectron < v20
+// (window as any).ipc = ipc
+
+// For Electron >= v20
+contextBridge.exposeInMainWorld('reactiveIPC', ipc);
