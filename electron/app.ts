@@ -3,7 +3,7 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow } from 'electron'
 import { join as joinPath } from 'path'
-import { ElectronIPC } from "../src";
+import { ElectronIPCMain } from "../src";
 
 function createWindow() {
     // Create the browser window.
@@ -11,7 +11,8 @@ function createWindow() {
         width: 1000,
         height: 600,
         webPreferences: {
-            preload: joinPath(__dirname, 'preload.js')
+            preload: joinPath(__dirname, 'preload.js'),
+            sandbox: false,
         }
     })
 
@@ -20,24 +21,25 @@ function createWindow() {
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools()
-    const ipc = ElectronIPC.initialize(mainWindow);
+    const ipc = ElectronIPCMain.initialize(mainWindow);
     const channel = ipc.addChanel('testing', { message: 'done' });
     channel.listen?.subscribe(val => {
-        console.log(val, 'jj');
+        console.log(val);
     });
     setTimeout(() => {
         channel?.send({ message: 'exit please' })
     }, 10000)
-    /* 
+    /*
     **
     For Second window test
     **
-    
+
     const sWindow = new BrowserWindow({
             width: 1000,
             height: 600,
             webPreferences: {
-                preload: joinPath(__dirname, 'preload.js')
+                preload: joinPath(__dirname, 'preload.js'),
+                sandbox: false,
             }
         })
         // and load the index.html of the app.

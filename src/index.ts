@@ -7,48 +7,28 @@ interface Channels<U> {
     [index: string]: DuplexChannel<U>;
 }
 
-export class ElectronIPC {
-    private static _instance: ElectronIPC;
-    private que: { [index: number]: string[] };
-    private win: BrowserWindow;
-    private isInitialized: boolean = false;
-    private _channels: { [id: number]: { [index: string]: IPCChannel<unknown> } };
-    private constructor(win?: BrowserWindow) {
+class ElectronIPC {
+    protected static _instance: ElectronIPCMain | ElectronIPCRenderer;
+    protected que: { [index: number]: string[] };
+    protected win: BrowserWindow;
+    protected isInitialized: boolean = false;
+    protected _channels: { [id: number]: { [index: string]: IPCChannel<unknown> } };
+    protected constructor(win?: BrowserWindow) {
         if (this.isMain && !win) throw new Error('Browser window is missing');
         this.win = win;
         this.que = {};
         this._channels = {};
-        if (this.isMain) this.initMain();
-        else this.initRenderer();
     }
 
     public get channels(): Channels<unknown> {
         return this._channels[this.win?.webContents.id ?? 0];
     }
 
-    public getChannelsForWindow(id?: number): Channels<unknown> {
-        return this._channels[id ?? this.win?.webContents.id ?? 0];
-    }
-
-    public static initialize(win?: BrowserWindow): ElectronIPC {
-        if (!this._instance) this._instance = new ElectronIPC(win)
-        if (win) this._instance.deaultWindow = win
-        return this._instance
-    }
-
     public static get instance() {
         return this._instance
     }
 
-    public get<T>(channelName: string, id?: number) {
-        return <DuplexChannel<T>>this._channels[id ?? this.win?.webContents.id ?? 0]?.[channelName];
-    }
-
-    public set deaultWindow(win: BrowserWindow) {
-        this.win = win;
-    }
-
-    public addChanel<T>(name: string, data: T, win?: BrowserWindow): DuplexChannel<unknown> {
+    protected addChanel<T>(name: string, data: T, win?: BrowserWindow): DuplexChannel<unknown> {
         if (!win && this.isMain) win = this.win;
         if (!win) throw new Error('window object missing')
         const channel = this.setDataOutgoing({ channel: name, data }, win.webContents);
@@ -72,7 +52,7 @@ export class ElectronIPC {
         return process?.type === ELectronProcessTypes.BROWSER;
     }
 
-    private resetChannels(id = 0) {
+    protected resetChannels(id = 0) {
         const channels = this._channels[id];
         if (!channels) return;
         Object.entries(channels).forEach(([key, val]) => {
@@ -87,7 +67,7 @@ export class ElectronIPC {
         });
     }
 
-    private setDataIncoming(sd: SignalData<unknown>, webContents?: WebContents) {
+    protected setDataIncoming(sd: SignalData<unknown>, webContents?: WebContents) {
         if (!sd) return;
         let id = 0;
         if (webContents) id = webContents.id;
@@ -111,7 +91,7 @@ export class ElectronIPC {
         }
     }
 
-    private setDataOutgoing(sd: SignalData<unknown>, webContents?: WebContents) {
+    protected setDataOutgoing(sd: SignalData<unknown>, webContents?: WebContents) {
         if (!sd) return;
         let id = 0;
         if (webContents) id = webContents.id;
@@ -127,6 +107,44 @@ export class ElectronIPC {
             if (!channel) return new IPCChannel(sd.channel, sd.data, webContents, ChannelState.OUTGOING);
             else channel.send(sd.data);
         }
+    }
+
+    protected loadQue(id = 0) {
+        Object.keys(this._channels[id])?.forEach(val => {
+            if (this.que[id]) this.que[id].push(val)
+            else this.que[id] = [];
+        });
+        //console.log(this.que);
+    }
+
+}
+
+export class ElectronIPCMain extends ElectronIPC {
+    private constructor(win: BrowserWindow) {
+        super(win);
+        this.initMain();
+    }
+
+    public static initialize(win: BrowserWindow): ElectronIPCMain {
+        if (!this._instance) this._instance = new ElectronIPCMain(win);
+        (this._instance as ElectronIPCMain).deaultWindow = win
+        return this._instance as ElectronIPCMain;
+    }
+
+    public get<T>(channelName: string, id?: number) {
+        return <DuplexChannel<T>>this._channels[id ?? this.win?.webContents.id ?? 0]?.[channelName];
+    }
+
+    public getChannelsForWindow(id?: number): Channels<unknown> {
+        return this._channels[id ?? this.win?.webContents.id ?? 0];
+    }
+
+    public set deaultWindow(win: BrowserWindow) {
+        this.win = win;
+    }
+
+    public addChanel<T>(name: string, data: T, win?: BrowserWindow): DuplexChannel<unknown> {
+        return super.addChanel(name, data, win);
     }
 
     private initMain() {
@@ -173,13 +191,42 @@ export class ElectronIPC {
 
     }
 
-    private loadQue(id = 0) {
-        Object.keys(this._channels[id])?.forEach(val => {
-            if (this.que[id]) this.que[id].push(val)
-            else this.que[id] = [];
-        });
-        //console.log(this.que);
+}
+
+export interface ExposedIPCRenderer {
+    getChannel: (name: string) => DuplexChannel<unknown>,
+    addChannel: (name: string, data: any) => DuplexChannel<unknown>,
+}
+
+export class ElectronIPCRenderer extends ElectronIPC {
+    private constructor() {
+        super();
+        this.initRenderer();
     }
+
+    public static initialize(): ElectronIPCRenderer {
+        if (!this._instance) this._instance = new ElectronIPCRenderer();
+        return this._instance as ElectronIPCRenderer;
+    }
+
+    public get<T>(channelName: string) {
+        return <DuplexChannel<T>>this._channels[0]?.[channelName];
+    }
+
+    public addChanel<T>(name: string, data: T): DuplexChannel<unknown> {
+        return super.addChanel(name, data);
+    }
+
+    /**
+     * For exposing functions using Electron's contextBridge api
+     */
+    public get asExposed() {
+        return {
+            getChannel: (name: string) => this.get(name),
+            addChannel: (name: string, initialData: any) => this.addChanel(name, initialData)
+        } as ExposedIPCRenderer;
+    }
+
     private initRenderer() {
         console.log('init renderer')
         ipcRenderer.once(ControlFlags.INIT, (event) => {

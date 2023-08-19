@@ -1,8 +1,8 @@
 import { contextBridge } from "electron/renderer";
-import { ElectronIPC } from "../src";
+import { ElectronIPCRenderer } from "../src";
 
 console.log('hello')
-const ipc = ElectronIPC.initialize();
+const ipc = ElectronIPCRenderer.initialize();
 setTimeout(() => {
     const channel = ipc.get<{ message: string }>('testing');
     //console.log(channel);
@@ -13,7 +13,7 @@ setTimeout(() => {
 
     setInterval(() => {
         console.log('sending data')
-        channel?.send({ message: `HI${i}` });
+        channel?.send({ message: `Hi: ${i}` });
         i++;
     }, 1000)
 
@@ -23,4 +23,4 @@ setTimeout(() => {
 // (window as any).ipc = ipc
 
 // For Electron >= v20
-contextBridge.exposeInMainWorld('reactiveIPC', ipc);
+contextBridge.exposeInMainWorld('ipc', ipc.asExposed);
