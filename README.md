@@ -18,12 +18,15 @@ yarn add electron-reactive-ipc #for yarn
 ## Usage
 
 ### Setup
+
 It has to be initialized in both processes(`main` and `renderer`),
 
 #### main
+
 The window object is required for it to initialize
+
 ```ts
-import { ElectronIPC } from 'electron-reactive-ipc'
+import { ElectronIPCMain } from 'electron-reactive-ipc'
 
 /*
   rest of the code
@@ -35,31 +38,42 @@ function createWindow () {
         height: 600,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js')
+            // sandbox: false, // sandbox is enabled by default in electron v20+, so you will have to bundle preload.js or disable sandbox
         }
     })
 
     win.loadFile('index.html')
-    const ipc = ElectronIPC.initialize(win);
+    const ipc = ElectronIPCMain.initialize(mainWindow);
 }
 
 ```
 
 ### renderer
+
 this has to be called from __preload__ script(unless node integration is enabled).
+
 ```ts
-import { ElectronIPC } from 'electron-reactive-ipc'
+import { ElectronIPCRenderer } from 'electron-reactive-ipc'
+import { contextBridge } from 'electron/renderer'
 
 /*
   rest of the code
 */
 
-const ipc = ElectronIPC.initialize();
+const ipc = ElectronIPCRenderer.initialize();
+// For ELectron < v20
+// (window as any).ipc = ipc
+
+// For Electron >= v20 with sandbox enabled
+contextBridge.exposeInMainWorld('ipc', ipc.asExposed);
 ```
 
 ### Sample Code
+
 Its part of the main repository, check out `https://github.com/muhammad-usman-anwar/electron-ipc/tree/main/electron`
 
 ## Documentation
+
 It is for `v2`
 **Added multi window support, uses `webContents.id` to reference/index channels**
 
@@ -75,45 +89,99 @@ It is for `v2`
     - `send(data:any)`
     - `listen`, observable for incoming data
 
-### class: `ElectronIPC`
+### class: `ElectronIPCMain`
 
-#### static method: `initialize(win?: BrowserWindow)`
+#### static method: `initialize(win: BrowserWindow)`
+
 Initializes/provides with instance of the class, `win` param is required for __main__ process. If instance already exists, it will set the `win` as the default window.
 
-#### static member: `initialize`
+#### static member: `instance`
+
 Refers to the instance of the class.
 
 #### method: `addChanel<T>(name: string, data: T, win?: BrowserWindow)`
-Adds a full duplex chanel for communication, `win` param is only valid for __main__ process. It used to associate the channel with the given window(if omitted, will use the default window)
+
+Adds a full duplex chanel for communication. It used to associate the channel with the given window(if omitted, will use the default window)
 
 #### method: `getChannelsForWindow(id?: number)`
+
 Gets all the available channels for the provided `WebContents.id`
 
 #### method: `get<T>(channelName: string, id?:number)`
-gets an available chanel by its name/title, null if not present. `id` param is only valid for __main__ process. It refers to `BrowserWindow.webContents.id`, to fetch the respective window's channel(if omitted then default `win`'s id is used)
 
-#### member: `deaultWindow` `//setter only`
+gets an available chanel by its name/title, null if not present. It refers to `BrowserWindow.webContents.id`, to fetch the respective window's channel(if omitted then default `win`'s id is used)
+
+#### member: `defaultWindow` `//setter only`
+
 used to set default browserWIndow later on.
 
 #### member: `channels`
+
 Object contatining all the available channels (for __main__, returns default `win`'s channels)
+
 ```ts
 {
   [index:string]:DuplexChannel;
 }
 ```
+
 Above __index__ is the `chanelName`
 
+### class: `ExposedIPCRenderer`
+
+#### static method: `initialize()`
+
+Initializes/provides with instance of the class.
+
+#### static member: `instance`
+
+Refers to the instance of the class.
+
+#### method: `addChanel<T>(name: string, data: T)`
+
+Adds a full duplex chanel for communication. It used to associate the channel with the given window.
+
+#### method: `get<T>(channelName: string)`
+
+gets an available chanel by its name/title, null if not present.
+
+#### member: `channels`
+
+Object contatining all the available channels (for __main__, returns default `win`'s channels)
+
+```ts
+{
+  [index:string]:DuplexChannel;
+}
+```
+
+Above __index__ is the `chanelName`
+
+#### member: `asExposed`
+
+Returns a clean api representation to be exposed in the renderer process, __electron__'s `contextBridge` api.
+
+```ts
+export interface ExposedIPCRenderer {
+    getChannel: (name: string) => DuplexChannel<unknown>,
+    addChannel: (name: string, data: any) => DuplexChannel<unknown>,
+}
+```
+
 ### class: `DuplexChannel<U>`
+
 __U__ is the type of data for transmission
 
 #### member: `listen`
+
 Objservable, outputs incoming data on the channel.
 
 #### method: `send(data: U)`
+
 send data to other end of IPC channel
 
 #### method: `close()`
+
 closes the ipc channel observers
 
 ## Quick Start
@@ -126,7 +194,7 @@ This quick start guid is the same as the one provided by electron team, with few
 // Modules to control application life and create native browser window
 import { app, BrowserWindow } from 'electron'
 import * as path from 'path'
-import { ElectronIPC } from 'electron-reactive-ipc'
+import { ElectronIPCMain } from 'electron-reactive-ipc'
 
 function createWindow () {
     // Create the browser window.
@@ -145,8 +213,8 @@ function createWindow () {
     // mainWindow.webContents.openDevTools()
 
     //FOLLOWING IS THE CODE FOR INTEGRATION
-    // ELectronIPC is a singleton class for now
-    const ipc = ElectronIPC.initialize(mainWindow)
+    // ELectronIPCMain is a singleton class
+    const ipc = ElectronIPCMain.initialize(mainWindow);
     const channel = ipc.addChanel('testing', { message: 'done' });
     channel.listen?.subscribe(val => {
         console.log(val);
@@ -181,10 +249,17 @@ app.on('window-all-closed', function () {
 ### `preload.ts`
 
 ```ts
-import { ElectronIPC } from 'electron-reactive-ipc'
+import { ElectronIPCRenderer } from 'electron-reactive-ipc'
+import { contextBridge } from 'electron/renderer'
 
-const ipc = ElectronIPC.initialize();
-(window as any).ipc = ipc;
+const ipc = ElectronIPCRenderer.initialize();
+
+// For ELectron < v20
+// (window as any).ipc = ipc
+
+// For Electron >= v20
+contextBridge.exposeInMainWorld('ipc', ipc.asExposed);
+
 setTimeout(() => {
     const channel = ipc.get<{ message: string }>('testing');
     channel?.listen.subscribe(val => {
@@ -231,4 +306,32 @@ window.addEventListener('DOMContentLoaded', () => {
   </body>
 </html>
 
+```
+
+## Electron `Sandbox` Support
+
+As of electron verion 20, sandbox is enabled by default. This limits the exposure of __preload__ script to node environment. [readmore](https://www.electronjs.org/docs/latest/tutorial/tutorial-preload#augmenting-the-renderer-with-a-preload-script)
+
+If you are moving ahead with sandbox enabled, then you need to bundle the preload script with used __node_module__ dependencies. You can use any bundler e.g. Webpack, Rollup etc. I have used __Rollup__ in the [example](./electron). Make sure to bundle __rxjs__(check below config), as the library depends on it. Other electron related **api**s are pre-exposed, read the deocumention link in above paragraph.
+
+### Sample config for `Rollup`
+
+```js
+import nodeResolve from "@rollup/plugin-node-resolve";
+import typescript from "@rollup/plugin-typescript";
+
+export default {
+    input: './electron/preload.ts',
+    output: {
+        dir: './dist/electron',
+        format: 'cjs',
+        sourcemap: false,
+    },
+    plugins: [
+        nodeResolve({
+            resolveOnly: ['rxjs']
+        }),
+        typescript()
+    ]
+}
 ```
