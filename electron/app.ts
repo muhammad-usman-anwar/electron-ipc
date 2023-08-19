@@ -12,12 +12,12 @@ function createWindow() {
         height: 600,
         webPreferences: {
             preload: joinPath(__dirname, 'preload.js'),
-            sandbox: false,
+            // sandbox: false,
         }
     })
 
     // and load the index.html of the app.
-    mainWindow.loadFile('../../../electron/index.html')
+    mainWindow.loadFile('../../electron/index.html')
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools()

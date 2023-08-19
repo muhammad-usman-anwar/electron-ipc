@@ -4,7 +4,8 @@
         "target": "ES6",
         "module": "CommonJS",
         "moduleResolution": "Node",
-        "outDir": "../dist/electron",
+        "outDir": "../dist/",
         "sourceMap": false,
-    }
+    },
+    "exclude": ["./preload.ts"]
 }

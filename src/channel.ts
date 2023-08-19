@@ -36,3 +36,7 @@ export class DuplexChannel<U>{
         if (!this.outgoing.closed) this.outgoing.unsubscribe();
     }
 }
+
+export interface Channels<U> {
+    [index: string]: DuplexChannel<U>;
+}

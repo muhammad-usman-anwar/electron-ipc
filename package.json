@@ -27,18 +27,21 @@
     "node": ">=14.0.0"
   },
   "scripts": {
-    "electron": "electron ./dist/electron/electron/app.js",
-    "electron:build": "tsc -p electron/tsconfig.json",
+    "electron": "electron ./dist/electron/app.js",
+    "electron:build": "tsc -p electron/tsconfig.json && rollup --config electron/rollup.config.mjs",
     "electron:start": "yarn electron:build && yarn electron",
     "electron:dev": "nodemon --watch electron -e ts,json --exec \"yarn electron:start -- -- --single\"",
     "start": "",
     "build": "tsc -p tsconfig.app.json"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.0",
+    "@rollup/plugin-typescript": "^11.1.2",
     "@types/node": "^16.7.6",
     "chalk": "^4.1.2",
     "electron": "^26.0.0",
     "nodemon": "^2.0.15",
+    "rollup": "^3.28.0",
     "typescript": "^4.5.5"
   },
   "dependencies": {
