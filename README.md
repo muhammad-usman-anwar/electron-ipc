@@ -4,9 +4,11 @@ It is a rxjs based electron ipc wrapper __V2__, check out [Quick Start](#quick-s
 
 ## Notes
 
+**BREAKING CHANGES since v2.2.xx**: Code refactoring was done to better support preload script when __Sandbox__ is enabled. You will need to update the import/require statements, also check out [Sandbox Support](#electron-sandbox-support)
+
 - it is in very early stages(Please do suggest improvements over github).
 - I am going to maintain it in two branches(`v1` and `v2`), with different design approaches.
-- I have added a quick start guid at the end basing on electron one.
+- I have added a quick start guide at the end, based on the electron one.
 
 ## Installation
 
@@ -321,9 +323,9 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
 
 export default {
-    input: './electron/preload.ts',
+    input: './preload.ts',
     output: {
-        dir: './dist/electron',
+        dir: './dist',
         format: 'cjs',
         sourcemap: false,
     },
