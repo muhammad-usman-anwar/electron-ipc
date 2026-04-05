@@ -83,7 +83,7 @@ export class ElectronIPCRenderer extends ElectronIPC {
     private pingMain() {
         ipcRenderer.send(ControlFlags.INIT);
         let i = 0;
-        let timer: NodeJS.Timer;
+        let timer: NodeJS.Timeout;
         timer = setInterval(() => {
             if (this.isInitialized) {
                 clearInterval(timer);
