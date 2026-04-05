@@ -35,16 +35,17 @@
     "build": "tsc -p tsconfig.app.json"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.0",
-    "@rollup/plugin-typescript": "^11.1.2",
-    "@types/node": "^16.7.6",
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^22.9.0",
     "chalk": "^4.1.2",
-    "electron": "^26.0.0",
-    "nodemon": "^2.0.15",
-    "rollup": "^3.28.0",
-    "typescript": "^4.5.5"
+    "electron": "^39.8.6",
+    "nodemon": "^2.0.22",
+    "rollup": "^3.30.0",
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "rxjs": "^7.5.4"
-  }
+  },
+  "packageManager": "yarn@4.13.0"
 }
